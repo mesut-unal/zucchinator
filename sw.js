@@ -1,6 +1,6 @@
 /* Zucchinator service worker — offline-first cache of the app shell.
    Bump CACHE when you change files so clients pick up the new version. */
-const CACHE = "zucchinator-v3";
+const CACHE = "zucchinator-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -27,13 +27,15 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // Never cache API calls to AI providers — always hit the network.
+  // Let cross-origin requests (AI providers, Pyodide CDN) go straight to network.
   if (url.origin !== self.location.origin) return;
+  // Network-first for our own files so updates appear immediately when online;
+  // fall back to cache when offline.
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
+    fetch(e.request).then((res) => {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => caches.match(e.request).then((hit) => hit || caches.match("./index.html")))
   );
 });
