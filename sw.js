@@ -1,6 +1,6 @@
 /* Zucchinator service worker — offline-first cache of the app shell.
    Bump CACHE when you change files so clients pick up the new version. */
-const CACHE = "zucchinator-v2";
+const CACHE = "zucchinator-v3";
 const ASSETS = [
   "./",
   "./index.html",
