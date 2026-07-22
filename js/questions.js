@@ -169,7 +169,7 @@ for k, v in d.items():
     id: "py-counter", topic: "python", title: "Most common words",
     difficulty: "easy", minutes: 6,
     prompt:
-`Given a string \`text\`, return the 3 most common words (case-insensitive), as \`(word, count)\` pairs, using the standard library.`,
+`Given a string \`text\`, return the 3 most common words (case-insensitive), as \`(word, count)\` pairs, using the standard library. **Name your function \`top3(text)\`.**`,
     hint: "`collections.Counter` has a `.most_common(n)` method.",
     solution:
 `\`\`\`python
@@ -736,7 +736,7 @@ The loss measures average squared error. Its gradient \`2(ŷ − y)/n\` points i
     id: "ai-dnn-4", topic: "ai", series: "DNN from scratch", part: [4, 5],
     title: "Backprop through one layer (chain rule)", difficulty: "hard", minutes: 10,
     prompt:
-`One linear layer: \`z = W·x + b\`, loss \`L\`, and you're given \`dL/dz\` (call it \`dz\`). Write the gradients \`dW\`, \`db\`, and \`dx\` in NumPy. Assume \`x\` shape \`(n,)\`, \`W\` shape \`(m, n)\`.`,
+`One linear layer: \`z = W·x + b\`, loss \`L\`, and you're given \`dL/dz\` (call it \`dz\`). Write \`linear_backward(dz, x, W)\` returning \`(dW, db, dx)\` in NumPy. Assume \`x\` shape \`(n,)\`, \`W\` shape \`(m, n)\`.`,
     hint: "Chain rule: dW = dz ⊗ x (outer product), db = dz, dx = Wᵀ · dz.",
     solution:
 `\`\`\`python
@@ -895,3 +895,170 @@ def rag_answer(question, chunks, embed, llm, k=4):
 Steps: **embed the query → retrieve the top-k most similar chunks → stuff them into the prompt → generate an answer grounded in them.** RAG primarily reduces **hallucination** (and staleness): instead of answering from parametric memory, the model cites retrieved, up-to-date source text. Quality hinges on retrieval — good chunking and embeddings matter more than the prompt.`,
   },
 ];
+
+/*
+ * Auto-grading test kits, keyed by question id.
+ *
+ * PY_TESTS[id]  = Python assert-harness run AFTER your code in the same namespace.
+ *                 If it finishes with no exception -> PASS. An AssertionError -> FAIL
+ *                 (its message is shown). Only questions with a clear function
+ *                 contract have tests; others just run and print.
+ *
+ * SQL_KITS[id]  = { setup: "CREATE TABLE…; INSERT…",  ref: "canonical SELECT" }
+ *                 Your query runs against setup; its result is compared (order-
+ *                 insensitive) to ref. Omit ref to only run & show the table.
+ */
+window.PY_TESTS = {
+  "py-gen-1":
+`import types
+assert isinstance(countdown(3), types.GeneratorType), "countdown must use yield (be a generator)"
+assert list(countdown(3)) == [3, 2, 1], "countdown(3) should yield 3, 2, 1"
+assert list(countdown(1)) == [1], "countdown(1) should yield just 1"
+assert list(countdown(0)) == [], "countdown(0) should yield nothing"`,
+  "py-counter":
+`r = top3("a a a b b c d")
+assert r == [("a", 3), ("b", 2), ("c", 1)], f"got {r}"`,
+  "py-dec-1":
+`@logged
+def _add(a, b): return a + b
+assert _add(2, 3) == 5, "wrapped function must still return the right value"`,
+  "py-dec-2":
+`@logged
+def _add(a, b):
+    "adds two numbers"
+    return a + b
+assert _add(2, 3) == 5
+assert _add.__name__ == "_add", "use functools.wraps so __name__ is preserved"`,
+  "py-dec-3":
+`calls = {"n": 0}
+@retry(times=3)
+def _flaky():
+    calls["n"] += 1
+    if calls["n"] < 3:
+        raise ValueError("boom")
+    return "ok"
+assert _flaky() == "ok"
+assert calls["n"] == 3, "should retry until it succeeds"
+calls["n"] = 0
+@retry(times=2)
+def _always():
+    calls["n"] += 1
+    raise ValueError("nope")
+try:
+    _always()
+    assert False, "should re-raise after exhausting retries"
+except ValueError:
+    pass
+assert calls["n"] == 2, "should attempt exactly 'times' times"`,
+  "py-dataclass":
+`p = Point(1.0, 2.0)
+assert p == Point(1.0, 2.0), "instances with same fields must be equal"
+assert (p.x, p.y) == (1.0, 2.0)
+try:
+    p.x = 9.0
+    assert False, "frozen=True should block attribute assignment"
+except Exception:
+    pass`,
+  "py-mutable-default":
+`assert add_item(1) == [1]
+assert add_item(2) == [2], "each default call must start with a fresh list"
+b = []
+assert add_item(9, b) == [9] and b == [9]`,
+  "ai-dnn-1":
+`import numpy as np
+assert np.isclose(neuron(np.array([1., 2.]), np.array([0.5, -1.]), 0.1), -1.4), "neuron should compute w·x + b (did you add the bias?)"
+assert np.isclose(neuron(np.array([1., 1.]), np.array([2., 3.]), 0.0), 5.0), "neuron([1,1], [2,3], 0) should be 5"`,
+  "ai-dnn-2":
+`import numpy as np
+assert np.isclose(sigmoid(0), 0.5), "sigmoid(0) should be 0.5"
+assert np.allclose(relu(np.array([-1., 0., 2.])), [0, 0, 2]), "relu should zero out negatives"
+_s = sigmoid(np.array([-3., 0., 3.]))
+assert np.all((_s > 0) & (_s < 1)), "sigmoid output should be strictly between 0 and 1"`,
+  "ai-dnn-3":
+`import numpy as np
+yp = np.array([2., 4.]); y = np.array([1., 2.])
+assert np.isclose(mse(yp, y), 2.5), "mse of [2,4] vs [1,2] should be 2.5"
+assert np.allclose(mse_grad(yp, y), [1.0, 2.0]), "mse_grad should be 2*(pred-y)/n"`,
+  "ai-dnn-4":
+`import numpy as np
+W = np.array([[1., 2.], [3., 4.], [5., 6.]])
+x = np.array([1., 1.]); dz = np.array([1., 0., -1.])
+dW, db, dx = linear_backward(dz, x, W)
+assert np.allclose(dW, np.outer(dz, x)), "dW should be outer(dz, x)"
+assert np.allclose(db, dz), "db should equal dz"
+assert np.allclose(dx, W.T @ dz), "dx should be W.T @ dz"`,
+  "ai-dnn-5":
+`assert abs(w - 2.0) < 0.05, f"w converged to {w:.3f}, expected ~2.0"`,
+  "ai-softmax":
+`import numpy as np
+s = softmax(np.array([1000., 1001., 1002.]))
+assert np.all(np.isfinite(s)), "must be numerically stable for large logits (subtract max first)"
+assert np.isclose(s.sum(), 1.0), "softmax output should sum to 1"
+assert np.allclose(softmax(np.array([0., 0.])), [0.5, 0.5]), "equal logits should give equal probabilities"`,
+  "ai-cosine":
+`import numpy as np
+assert np.isclose(cosine(np.array([1., 0.]), np.array([1., 0.])), 1.0), "identical vectors should have cosine 1"
+assert np.isclose(cosine(np.array([1., 0.]), np.array([0., 1.])), 0.0), "perpendicular vectors should have cosine 0"
+assert np.isclose(cosine(np.array([1., 1.]), np.array([2., 2.])), 1.0), "cosine ignores magnitude (same direction -> 1)"`,
+};
+
+window.SQL_KITS = {
+  "sql-win-1": {
+    setup: `CREATE TABLE sales(region TEXT, amount INTEGER);
+INSERT INTO sales VALUES ('east',600),('east',700),('west',50),('west',400),('north',300),('north',300);`,
+    ref: `SELECT region, SUM(amount) AS total FROM sales GROUP BY region ORDER BY total DESC;`,
+  },
+  "sql-win-2": {
+    setup: `CREATE TABLE sales(region TEXT, amount INTEGER);
+INSERT INTO sales VALUES ('east',600),('east',700),('west',50),('west',400),('north',300),('north',300);`,
+    ref: `SELECT region, SUM(amount) AS total FROM sales GROUP BY region HAVING SUM(amount) > 1000;`,
+  },
+  "sql-win-3": {
+    setup: `CREATE TABLE sales(region TEXT, amount INTEGER);
+INSERT INTO sales VALUES ('east',100),('east',200),('west',50);`,
+    ref: `SELECT region, amount, SUM(amount) OVER (PARTITION BY region) AS region_total FROM sales;`,
+  },
+  "sql-win-4": {
+    setup: `CREATE TABLE scores(player TEXT, points INTEGER);
+INSERT INTO scores VALUES ('a',100),('b',100),('c',90),('d',80);`,
+  },
+  "sql-win-5": {
+    setup: `CREATE TABLE daily(dt TEXT, revenue INTEGER);
+INSERT INTO daily VALUES ('2024-01-01',10),('2024-01-02',20),('2024-01-03',30),('2024-01-04',40);`,
+    ref: `SELECT dt, revenue,
+       SUM(revenue) OVER (ORDER BY dt ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total,
+       AVG(revenue) OVER (ORDER BY dt ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS moving_avg_3d
+FROM daily;`,
+  },
+  "sql-joins": {
+    setup: `CREATE TABLE users(id INTEGER, name TEXT);
+INSERT INTO users VALUES (1,'Ann'),(2,'Bob'),(3,'Cara');
+CREATE TABLE orders(user_id INTEGER, total INTEGER);
+INSERT INTO orders VALUES (1,50),(1,20),(3,90);`,
+    ref: `SELECT u.id, u.name, COUNT(o.user_id) AS n_orders
+FROM users u LEFT JOIN orders o ON o.user_id = u.id
+GROUP BY u.id, u.name;`,
+  },
+  "sql-second-highest": {
+    setup: `CREATE TABLE employees(id INTEGER, salary INTEGER);
+INSERT INTO employees VALUES (1,100),(2,200),(3,200),(4,150);`,
+    ref: `SELECT MAX(salary) AS second_highest FROM employees
+WHERE salary < (SELECT MAX(salary) FROM employees);`,
+  },
+  "sql-dedupe": {
+    setup: `CREATE TABLE events(user_id INTEGER, event_time TEXT, status TEXT);
+INSERT INTO events VALUES (1,'2024-01-01','a'),(1,'2024-01-03','b'),(2,'2024-01-02','c');`,
+    ref: `SELECT user_id, event_time, status FROM (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_time DESC) AS rn
+  FROM events
+) t WHERE rn = 1;`,
+  },
+  "sql-cte": {
+    setup: `CREATE TABLE sales(region TEXT, amount INTEGER);
+INSERT INTO sales VALUES ('east',600),('east',700),('west',50),('west',80),('north',300),('north',300);`,
+    ref: `WITH region_avg AS (
+  SELECT region, AVG(amount) AS avg_amt FROM sales GROUP BY region
+)
+SELECT region, avg_amt FROM region_avg WHERE avg_amt > 100;`,
+  },
+};

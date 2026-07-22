@@ -150,6 +150,34 @@ body {
   color: #d6e8dd; white-space: pre;
 }
 
+/* pass/fail verdict */
+.verdict {
+  margin-top: 10px; padding: 12px 14px; border-radius: 10px;
+  font-weight: 700; font-size: 15px; border: 1px solid var(--line);
+}
+.verdict.pass { background: #10281a; border-color: var(--green-dim); color: var(--green-bright); }
+.verdict.fail { background: #2a1414; border-color: #5a2a24; color: #ff8a72; }
+.verdict.error { background: #2a2414; border-color: #5a4a24; color: var(--amber); }
+.verdict-msg {
+  font-weight: 500; font-size: 13px; margin-top: 6px; color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+}
+
+/* SQL result tables */
+.sql-table-wrap { margin-top: 10px; }
+.sql-table-wrap.expected { margin-top: 8px; }
+.sql-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.sql-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.sql-table th, .sql-table td {
+  padding: 7px 12px; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.sql-table th { background: #12211b; color: var(--green-bright); font-weight: 700; }
+.sql-table td { color: #d6e8dd; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.sql-table tr:last-child td { border-bottom: none; }
+.muted-cell { color: var(--muted) !important; text-align: center !important; }
+.collapse-btn.sample { font-size: 13.5px; font-weight: 600; }
+
 /* collapsibles */
 .collapse { margin-top: 12px; }
 .collapse-btn {

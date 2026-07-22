@@ -86,8 +86,31 @@ topic, so to add a new part to a series just place it after the previous part.
 }
 ```
 
-After editing files, bump `CACHE` in [`sw.js`](sw.js) (e.g. `zucchinator-v2`) so
-installed copies pick up the change, then push again.
+### Testing answers (auto-grading + SQL)
+
+- **Python / AI questions** show a **✓ Run & check** button when they have a test
+  kit. Kits live in `window.PY_TESTS` at the bottom of [`js/questions.js`](js/questions.js),
+  keyed by question id — a Python `assert` harness that runs after your code. No
+  exception ⇒ pass. Give each `assert` a message so failures explain themselves.
+  Questions without a kit just get a plain **▶ Run Python** (output only).
+- **SQL questions** run against a real in-browser SQLite (sql.js). Kits live in
+  `window.SQL_KITS`: `{ setup: "CREATE/INSERT…", ref: "canonical query" }`. Your
+  query runs on `setup`, then its rows are compared (order-insensitive) to `ref`.
+  Omit `ref` to just show the result table with no pass/fail.
+- Both engines lazy-load from a CDN on first use, so testing needs internet the
+  first time; the rest of the app works offline.
+
+### Releasing an update (important)
+
+After editing any file, do **both** so browsers and installed apps fetch the new
+version instead of a cached one:
+
+1. Bump the `?v=` number on the asset URLs in [`index.html`](index.html)
+   (`?v=7` → `?v=8` on the CSS + both scripts).
+2. Bump `CACHE` in [`sw.js`](sw.js) (`zucchinator-v7` → `-v8`).
+
+Then `git commit` and `git push` — GitHub Pages redeploys in ~30–60s and the app
+self-updates on next open.
 
 ## Files
 
